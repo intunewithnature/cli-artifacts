@@ -1,0 +1,2 @@
+# Windows Event Log parsing
+python-evtx>=0.8.0
