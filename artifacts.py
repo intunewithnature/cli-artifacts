@@ -112,11 +112,21 @@ def main():
         print(f"Warning: {args.logfile} doesn't look like an .evtx file", file=sys.stderr)
     
     count = 0
+    shown = 0
     for event in parse_evtx(args.logfile):
-        print_event(event)
         count += 1
+        
+        # filter by level if specified
+        if args.level and event["level"] != args.level:
+            continue
+        
+        print_event(event)
+        shown += 1
     
-    print(f"\n--- {count} events ---")
+    if args.level:
+        print(f"\n--- {shown} of {count} events (filtered: {args.level}) ---")
+    else:
+        print(f"\n--- {count} events ---")
 
 
 if __name__ == "__main__":
