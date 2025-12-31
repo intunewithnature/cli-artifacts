@@ -5,6 +5,7 @@ cli-artifacts: Windows Event Log parser for people who hate Event Viewer
 
 import argparse
 import sys
+import csv
 from pathlib import Path
 from datetime import datetime
 import xml.etree.ElementTree as ET
@@ -101,6 +102,16 @@ def main():
         choices=["critical", "error", "warning", "info"],
         help="Filter by severity level"
     )
+    parser.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Export to CSV file"
+    )
+    parser.add_argument(
+        "-s", "--summary",
+        action="store_true",
+        help="Show summary stats only (no individual events)"
+    )
     
     args = parser.parse_args()
     
@@ -113,6 +124,8 @@ def main():
     
     count = 0
     shown = 0
+    filtered_events = []
+    
     for event in parse_evtx(args.logfile):
         count += 1
         
@@ -120,13 +133,51 @@ def main():
         if args.level and event["level"] != args.level:
             continue
         
-        print_event(event)
+        # filter by event ID if specified
+        if args.event_id and event["event_id"] != args.event_id:
+            continue
+        
+        filtered_events.append(event)
         shown += 1
     
-    if args.level:
-        print(f"\n--- {shown} of {count} events (filtered: {args.level}) ---")
+    # output results
+    if args.output:
+        # CSV export
+        with open(args.output, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["timestamp", "level", "event_id", "provider", "message"])
+            writer.writeheader()
+            writer.writerows(filtered_events)
+        print(f"Exported {shown} events to {args.output}")
+    elif args.summary:
+        # just show summary stats
+        pass
     else:
-        print(f"\n--- {count} events ---")
+        # print to stdout
+        for event in filtered_events:
+            print_event(event)
+    
+    # always show summary at the end
+    level_counts = {}
+    for event in filtered_events:
+        lvl = event["level"]
+        level_counts[lvl] = level_counts.get(lvl, 0) + 1
+    
+    # print summary
+    filters = []
+    if args.level:
+        filters.append(f"level={args.level}")
+    if args.event_id:
+        filters.append(f"event_id={args.event_id}")
+    
+    print()
+    if level_counts:
+        breakdown = ", ".join([f"{lvl}: {c}" for lvl, c in sorted(level_counts.items())])
+        print(f"Breakdown: {breakdown}")
+    
+    if filters:
+        print(f"Total: {shown} of {count} events ({', '.join(filters)})")
+    else:
+        print(f"Total: {count} events")
 
 
 if __name__ == "__main__":

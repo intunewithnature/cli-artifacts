@@ -1,24 +1,13 @@
 # cli-artifacts
 
-Windows Event Log parser. Tired of clicking through Event Viewer.
-
-## TODO
-
-- [ ] Parse .evtx files
-- [ ] Filter by event ID, level, time range
-- [ ] Output summary of errors/warnings
-- [ ] Maybe export to CSV?
+Windows Event Log parser for people who hate Event Viewer.
 
 ## Usage
 
-```
-python artifacts.py <logfile.evtx>
-```
-
-## Requirements
-
-Python 3.8+
-
-```
+```bash
 pip install -r requirements.txt
+python artifacts.py System.evtx
+python artifacts.py System.evtx --level error
+python artifacts.py System.evtx --output results.csv
+python artifacts.py System.evtx --summary
 ```
